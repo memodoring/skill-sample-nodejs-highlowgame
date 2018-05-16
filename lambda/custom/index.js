@@ -2,7 +2,9 @@
 /* eslint-disable  no-console */
 /* eslint-disable  no-restricted-syntax */
 
-const Alexa = require('ask-sdk');
+const Alexa = require('ask-sdk-core');
+const {DynamoDbPersistenceAdapter} = require(`ask-sdk-dynamodb-persistence-adapter`);
+const {DynamoDB} = require('aws-sdk');
 
 const LaunchRequest = {
   canHandle(handlerInput) {
@@ -18,7 +20,7 @@ const LaunchRequest = {
     }
 
     attributesManager.setSessionAttributes(attributes);
-    const speechOutput = `Welcome to High Low guessing game. You have played ${attributes.gamesPlayed.toString()} times. would you like to play?`;
+    const speechOutput = `Memo Welcome to High Low guessing game. You have played ${attributes.gamesPlayed.toString()} times. would you like to play?`;
     const reprompt = 'Say yes to start the game or no to quit.';
     return responseBuilder
       .speak(speechOutput)
@@ -173,7 +175,17 @@ const ErrorHandler = {
   },
 };
 
-const skillBuilder = Alexa.SkillBuilders.standard();
+const skillBuilder = Alexa.SkillBuilders.custom();
+const myPersistenceAdapter = new DynamoDbPersistenceAdapter({
+                          tableName : `High-Low-Game`});
+
+
+const customPersistenceAdapter = new DynamoDbPersistenceAdapter({
+  tableName: `High-Low`,
+  dynamoDBClient : new DynamoDB(),
+  createTable : true,
+});
+
 
 exports.handler = skillBuilder
   .addRequestHandlers(
@@ -187,6 +199,9 @@ exports.handler = skillBuilder
     UnhandledIntent,
   )
   .addErrorHandlers(ErrorHandler)
-  .withTableName('High-Low-Game')
-  .withAutoCreateTable(true)
+  .withPersistenceAdapter(new DynamoDbPersistenceAdapter({
+    tableName: `High-Low`,
+    dynamoDBClient : new DynamoDB(),
+    createTable : true,
+  }))
   .lambda();
